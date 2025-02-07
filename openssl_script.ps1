@@ -1,7 +1,7 @@
 #getting details from command line arguments
 
 param(
-    [string]$jsonString = '{"email": "anaybhatkar35@gmail.com", "country": "IN", "state": "maharashtra","locality":"mumbai","orgUnit":"IT","org":"IDFC FIRST BANK","names":"test.idfcbank.com,testuat.idfcbank.com"}'
+    [string]$jsonString = '{"email": "anaybhatkar35@gmail.com", "country": "IN", "state": "maharashtra","locality":"mumbai","orgUnit":"IT","org":"IDFC FIRST BANK","names":"test.idfcbank.com,testuat.idfcbank.com","ritm":"RITM010110"}'
 )
 
 $openssl_path = "C:\PROGRA~1\OpenSSL-Win64\bin\openssl.exe";
@@ -15,6 +15,7 @@ $locality = $jsonObject.locality;
 $orgUnit = $jsonObject.orgUnit;
 $org = $jsonObject.org;
 $name = $jsonObject.names;
+$ritm = $jsonObject.ritm;
 
 $names = $name.Split(",");
 
@@ -65,30 +66,34 @@ $san_names
 # -------------- END CONFIG --------------
 "@
 
-if (-not (Test-Path -Path $path\$subject_common_name)) {
-    New-Item -Path $path -Name $subject_common_name -ItemType Directory | Out-Null
+if (-not (Test-Path -Path $path\$ritm)) {
+    New-Item -Path $path -Name $ritm -ItemType Directory | Out-Null
 }
 
-$files = $path + $subject_common_name
+$config_file_path = $path + "csrconf.cfg"; 
+$configFile | Out-File -FilePath $config_file_path -Force -Encoding ascii
 
-$configFile | Out-File -FilePath csrconf.cfg -Force -Encoding ascii
-$CSR = $path + $subject_common_name + "\" + $subject_common_name + ".csr.txt";
-$private_key1 = $path + $subject_common_name + "\" + $subject_common_name + ".key.txt";
-$private_key2 = $path + $subject_common_name + "\" + $subject_common_name + "_WP.key.txt";
+
+#Declare Directories
+$files = $path + $ritm + "_" + $subject_common_name;
+$CSR = $files + "\" + $subject_common_name + ".csr.txt";
+$private_key1 = $files + "\" + $subject_common_name + ".key.txt";
+$private_key2 = $files + "\" + $subject_common_name + "_WP.key.txt";
+$zip_file_path = $path + $ritm + "_" + $subject_common_name + ".zip";
 
 $command1 = $openssl_path + " req -new -nodes -out " + $CSR + " -keyout " + $private_key1 + " -config csrconf.cfg";
-$command2 = $openssl_path + " rsa -in " + $private_key1 + " -out " + $private_key2;
+$command2 = $openssl_path + " rsa -in " + $private_key1 + " -out " + $private_key2 + " -traditional";
 
 Invoke-Expression -Command $command1
 Invoke-Expression -Command $command2
 Invoke-Expression -Command "clear"
 
-##$zip_file = $path + $common_name + ".zip";
 
 #Compress file
 
-if (-not (Test-Path -Path $path\$subject_common_name.zip)) {
-    Compress-Archive -Path $files -DestinationPath $path$subject_common_name.zip
+if (Test-Path -Path $path\$subject_common_name.zip) {
+    #Compress-Archive -Path $files -DestinationPath $path$subject_common_name.zip
+    Remove-Item $zip_file_path -Recurse -Force
 }
 
 
